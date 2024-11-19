@@ -53,12 +53,16 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key.pem
           chmod 600 private_key.pem
 
-      - name: Deploy to GCP VM
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.GCP_VM_IP }}
-          username: ${{ secrets.GCP_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "./publish/*"
-          target: "/home/${{ secrets.GCP_VM_USER }}/php-app/"
-          debug: true
+      - name: list files
+        run: ls -al
+
+      # - name: Deploy to GCP VM
+      #   uses: appleboy/scp-action@v0.1.7
+      #   with:
+      #     host: ${{ secrets.GCP_VM_IP }}
+      #     username: ${{ secrets.GCP_USER }}
+      #     key: ${{ secrets.SSH_PRIVATE_KEY }}
+      #     source: "./publish/*"
+      #     target: "/home/${{ secrets.GCP_VM_USER }}/php-app/"
+      #     debug: true
+      
