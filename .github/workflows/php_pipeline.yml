@@ -48,22 +48,17 @@ jobs:
             echo "No tests found, skipping."
           fi
 
-      - id: 'auth'
-        uses: 'google-github-actions/auth@v2'
-        with:
-           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
-           
-      # - name: Start ssh-agent
-      #   run: |
-      #     eval $(ssh-agent -s)
-      #     echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' | ssh-add - <<< "${{ secrets.SSH_PRIVATE_KEY }}"
-      #     echo "${{ secrets.SSH_PASSPHRASE }}" | ssh-add -p
+      - name: Create SSH Key File
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key.pem
+          chmod 600 private_key.pem
 
-      - id: 'compute-ssh'
-        uses: 'google-github-actions/ssh-compute@v1'
+      - name: Deploy to GCP VM
+        uses: appleboy/scp-action@v0.1.7
         with:
-          instance_name: 'php-app-test'
-          zone: 'us-central1-a'
-          ssh_private_key: '${{ secrets.SSH_PRIVATE_KEY }}'
-          ssh_args: '-o StrictHostKeyChecking=no'
-          command: 'echo Hello world'
+          host: ${{ secrets.GCP_VM_IP }}
+          username: ${{ secrets.GCP_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "./publish/*"
+          target: "/home/${{ secrets.GCP_VM_USER }}/php-app/"
+          debug: true
