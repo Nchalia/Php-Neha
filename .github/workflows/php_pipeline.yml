@@ -48,9 +48,8 @@ jobs:
             echo "No tests found, skipping."
           fi
 
-      - name: Create SSH Key File
-        run: |
-          mkdir -p ~/.ssh  # Create the .ssh directory if it doesn't exist
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa  # Write the private key to id_rsa file
-          chmod 600 ~/.ssh/id_rsa  # Set proper permissions for the private key
+      - id: 'auth'
+        uses: 'google-github-actions/auth@v2'
+        with:
+           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
