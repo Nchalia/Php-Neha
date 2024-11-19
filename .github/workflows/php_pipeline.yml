@@ -3,11 +3,10 @@ name: PHP Application CI
 on:
   push:
     branches:
-      - main
+      - feature/php-app
   pull_request:
     branches:
-      - main
-
+      - feature/php-app
 jobs:
   build:
     runs-on: ubuntu-latest
