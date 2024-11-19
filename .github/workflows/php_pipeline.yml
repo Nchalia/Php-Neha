@@ -48,26 +48,33 @@ jobs:
           else
             echo "No tests found, skipping."
           fi
-      - name: Add private key
+
+      # Step 6: Deploy to GCP VM
+      - name: Deploy to GCP VM
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }} # Private key from GitHub Secrets
+          GCP_USER: ${{ secrets.GCP_USER }}               # Get VM user from secrets
+          GCP_VM_IP: ${{ secrets.GCP_VM_IP }}             # Get VM IP from secrets
         run: |
+          # Add private key
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
+
+          # Add VM to known hosts
           ssh-keyscan -H $GCP_VM_IP >> ~/.ssh/known_hosts
-      
-      - name: Deploy code to VM
-        run: |
+
+          # Deploy code to VM
           rsync -avz --delete ./ $GCP_USER@$GCP_VM_IP:/var/www/php-app
-      
-      - name: Restart PHP Application
-        run: |
-          ssh -i ~/.ssh/id_rsa $GCP_USER@$GCP_VM_IP << 'EOF'
+
+          # Restart PHP Application
+          ssh $GCP_USER@$GCP_VM_IP << 'EOF'
             sudo pkill -f "php -S" || true # Stop any running instance
             cd /var/www/php-app
-            nohup php -S 0.0.0.0:8006 > app.log 2>&1 &
+            nohup php -S 0.0.0.0:8004 > app.log 2>&1 &
           EOF
-          
+
       # Step 7: Confirm Deployment
       - name: Confirm Deployment
         run: |
-          curl http://$GCP_VM_IP:8006 || echo "Deployment Failed"
+          curl http://$GCP_VM_IP:8004 || echo "Deployment Failed"
