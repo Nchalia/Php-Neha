@@ -54,13 +54,3 @@ jobs:
           mkdir -p ~/.ssh  # Create the .ssh directory if it doesn't exist
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa  # Write the private key to id_rsa file
           chmod 600 ~/.ssh/id_rsa  # Set proper permissions for the private key
-          
-      - name: Deploy to GCP VM
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.GCP_VM_IP }}
-          username: ${{ secrets.GCP_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "./publish/*"
-          target: "/home/${{ secrets.GCP_USER }}/php-app/"
-          debug: true
