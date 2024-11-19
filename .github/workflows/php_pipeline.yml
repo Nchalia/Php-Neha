@@ -54,15 +54,3 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa  # Write the private key to id_rsa file
           chmod 600 ~/.ssh/id_rsa  # Set proper permissions for the private key
 
-      # Step 7: Add the SSH Host to Known Hosts (to avoid SSH warnings)
-      - name: Add GCP VM IP to known_hosts
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan -H ${{ secrets.GCP_VM_IP }} >> ~/.ssh/known_hosts
-          
-      # Step 8: Test SSH Connection (for debugging)
-      - name: Test SSH connection
-        run: |
-          ssh -vvv -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -T ${{ secrets.GCP_USER }}@${{ secrets.GCP_VM_IP }} "echo 'SSH is working!'"
-
-
