@@ -3,11 +3,10 @@ name: Build and Deploy PHP Application
 on:
   push:
     branches:
-      - main
       - security-pipeline
   pull_request:
     branches:
-      - main
+      - security-pipeline
     types: [opened, synchronize, reopened]
 
 jobs:
