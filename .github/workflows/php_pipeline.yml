@@ -60,20 +60,20 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.GCP_VM_IP }} >> ~/.ssh/known_hosts
-
-      # Step 8: Deploy PHP Application to GCP VM
+          
       - name: Deploy to GCP VM
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{ secrets.GCP_USER }}@${{ secrets.GCP_VM_IP }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -T ${{ secrets.GCP_USER }}@${{ secrets.GCP_VM_IP }} << 'EOF'
             # Navigate to the application directory
             cd /var/www/html
-
-            # Pull the latest code from your repository (or use other deployment methods like copying the code)
+      
+            # Pull the latest code from your repository
             git pull origin main
-
-            # Install dependencies (if any)
+      
+            # Install dependencies
             composer install
-
-            # Restart the PHP application server (example with Apache)
+      
+            # Restart the PHP application server (Apache)
             sudo systemctl restart apache2
           EOF
+
