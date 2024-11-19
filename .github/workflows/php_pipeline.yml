@@ -61,6 +61,9 @@ jobs:
       - name: list files
         run: ls -al
 
+      - name: Set file permissions for private key
+        run: chmod 644 publish/private_key.pem
+
       - name: Deploy to GCP VM
         uses: appleboy/scp-action@v0.1.7
         with:
