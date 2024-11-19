@@ -56,7 +56,7 @@ jobs:
       - name: Prepare files for deployment
         run: |
           mkdir -p ./publish
-          cp -R * ./publish
+          rsync -av --progress . ./publish --exclude publish
 
       - name: list files
         run: ls -al
