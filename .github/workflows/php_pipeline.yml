@@ -48,6 +48,13 @@ jobs:
           else
             echo "No tests found, skipping."
           fi
+      - name: Add SSH private key to ssh-agent
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          eval $(ssh-agent -s)
+          ssh-add ~/.ssh/id_rsa
 
       # Step 6: Deploy to GCP VM
       - name: Deploy to GCP VM
