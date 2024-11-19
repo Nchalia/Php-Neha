@@ -62,5 +62,5 @@ jobs:
           username: ${{ secrets.GCP_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "./publish/*"
-          target: "/home/${{ secrets.GCP_VM_USER }}/php-app/"
+          target: "/home/${{ secrets.GCP_USER }}/php-app/"
           debug: true
