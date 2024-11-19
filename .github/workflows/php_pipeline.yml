@@ -63,5 +63,6 @@ jobs:
       # Step 8: Test SSH Connection (for debugging)
       - name: Test SSH connection
         run: |
-          ssh -v -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{ secrets.GCP_USER }}@${{ secrets.GCP_VM_IP }} "echo 'SSH is working!'"
+          ssh -vvv -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -T ${{ secrets.GCP_USER }}@${{ secrets.GCP_VM_IP }} "echo 'SSH is working!'"
+
 
