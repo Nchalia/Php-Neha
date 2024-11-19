@@ -1,0 +1,38 @@
+name: PHP Application CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout code
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up PHP
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+
+      # Step 3: Run PHP Linting
+      - name: Run PHP Lint
+        run: |
+          php -l index.php
+
+      # Step 4: Run PHP Unit Tests (if any)
+      - name: Run Tests
+        run: |
+          if [ -d tests ]; then
+            ./vendor/bin/phpunit --configuration phpunit.xml
+          else
+            echo "No tests found, skipping."
+          fi
