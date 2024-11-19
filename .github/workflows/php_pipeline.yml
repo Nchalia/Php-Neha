@@ -53,6 +53,11 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key.pem
           chmod 600 private_key.pem
 
+      - name: Prepare files for deployment
+        run: |
+          mkdir -p ./publish
+          cp -R * ./publish
+
       - name: list files
         run: ls -al
 
@@ -62,7 +67,7 @@ jobs:
           host: ${{ secrets.GCP_VM_IP }}
           username: ${{ secrets.GCP_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "./"
+          source: "./publish/*"
           target: "/home/${{ secrets.GCP_VM_USER }}/php-app/"
           debug: true
       
