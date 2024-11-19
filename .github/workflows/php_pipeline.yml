@@ -62,7 +62,7 @@ jobs:
       - id: 'compute-ssh'
         uses: 'google-github-actions/ssh-compute@v1'
         with:
-          instance_name: 'ctscantool'
-          zone: 'us-central1-c'
+          instance_name: 'php-app-test'
+          zone: 'us-central1-a'
           ssh_private_key: '${{ secrets.SSH_PRIVATE_KEY }}'
           command: 'echo Hello world'
