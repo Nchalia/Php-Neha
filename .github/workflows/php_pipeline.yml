@@ -64,5 +64,5 @@ jobs:
         with:
           instance_name: 'ctscantool'
           zone: 'us-central1-c'
-          ssh_private_key: '${{ secrets.GCP_SSH_PRIVATE_KEY }}'
+          ssh_private_key: '${{ secrets.SSH_PRIVATE_KEY }}'
           command: 'echo Hello world'
