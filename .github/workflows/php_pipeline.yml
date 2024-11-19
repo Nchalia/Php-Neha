@@ -84,3 +84,14 @@ jobs:
           source: "./publish/*"
           target: "/home/${{ secrets.GCP_USER }}/php-app/"
           debug: true
+          
+      # Step 11: Run PHP built-in server
+      - name: Start PHP Server
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.GCP_VM_IP }}
+          username: ${{ secrets.GCP_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /home/${{ secrets.GCP_USER }}/php-app/publish
+            nohup php -S 0.0.0.0:8004 > php_server.log 2>&1 &
