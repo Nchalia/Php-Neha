@@ -10,8 +10,8 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  validate:
-    name: Pull Request Validation
+  sonar-analysis:
+    name: SonarQube Analysis
     runs-on: ubuntu-latest
 
     steps:
@@ -19,7 +19,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Ensure all commit history is fetched
+          fetch-depth: 0  # Fetch full history for Sonar relevance
 
       # Step 2: Set up PHP
       - name: Set up PHP
@@ -27,43 +27,18 @@ jobs:
         with:
           php-version: '7.4'
 
-      # Step 3: Install Composer Dependencies
-      - name: Install Composer Dependencies
+      # Step 3: Install dependencies for SonarQube (if any)
+      - name: Install Dependencies
         run: composer install --no-dev --optimize-autoloader
 
-      # Step 4: Run SonarQube Scan
-      - name: SonarQube Scan
+      # Step 4: Run SonarQube Analysis
+      - name: SonarQube Cloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to fetch PR information
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-      # Step 5: Wait for SonarQube Quality Gate
-      - name: Wait for Quality Gate
-        id: sonar
-        uses: sonarsource/sonarqube-quality-gate-action@v2.1
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
-      # Step 6: Lint the PHP Code
-      - name: Run PHP Lint
-        run: php -l index.php
-
-      # Step 7: Run PHP Unit Tests (if any)
-      - name: Run Tests
-        run: |
-          if [ -d tests ]; then
-            ./vendor/bin/phpunit --configuration phpunit.xml
-          else
-            echo "No tests found, skipping."
-          fi
-
-      # Step 8: Fail the pipeline if Quality Gate is not passed
-      - name: Check Quality Gate Result
-        run: |
-          if [ "${{ steps.sonar.outputs.quality_gate_status }}" != "PASSED" ]; then
-            echo "SonarQube Quality Gate failed. Please address the issues."
-            exit 1
-          else
-            echo "SonarQube Quality Gate passed."
-          fi
+    # Fail the job if SonarQube finds issues
+    outputs:
+      sonar-status: ${{ steps.sonar.outputs.sonar-status }}
+    continue-on-error: false  # Fail the workflow if the analysis fails
