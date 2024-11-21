@@ -3,7 +3,7 @@ name: Pull Request Validation Pipeline
 on:
   pull_request:
     branches:
-      - security-pipeline
+      - pr-pipeline
     types: [opened, synchronize, reopened]
 
 jobs:
