@@ -1,6 +1,9 @@
 name: Pull Request Validation Pipeline
 
 on:
+  push:
+    branches:
+      - pr-pipeline
   pull_request:
     branches:
       - pr-pipeline
