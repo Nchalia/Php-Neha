@@ -21,33 +21,33 @@ jobs:
         with:
           fetch-depth: 0  # Fetch full history for better Sonar relevance
 
-      # Fail the job if SonarQube finds issues
+      # Step 2: Run SonarQube Analysis
       - name: SonarQube Cloud Scan
         id: sonar
         uses: SonarSource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        continue-on-error: true  # Allow the step to continue even if Sonar fails
 
+      # Step 3: Check SonarQube Quality Gate Result
       - name: Fail Workflow on SonarQube Quality Gate Failure
         if: ${{ steps.sonar.outputs.sonar-quality-gate-status != 'PASSED' }}
         run: |
-          echo "SonarQube Quality Gate failed. Exiting with failure."
+          echo "SonarQube Quality Gate failed."
           exit 1
-          
-      # Step 3: Set up PHP
+
+      # Step 4: Set up PHP
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '7.4'
 
-      # Step 4: Run PHP Lint
+      # Step 5: Run PHP Lint
       - name: Run PHP Lint
         run: |
           php -l index.php
 
-      # Step 5: Run PHP Unit Tests (if any)
+      # Step 6: Run PHP Unit Tests (if any)
       - name: Run Tests
         run: |
           if [ -d tests ]; then
@@ -56,17 +56,17 @@ jobs:
             echo "No tests found, skipping."
           fi
 
-      # Step 6: Install Composer Dependencies
+      # Step 7: Install Composer Dependencies
       - name: Install Composer Dependencies
         run: composer install --no-dev --optimize-autoloader
 
-      # Step 7: Prepare files for deployment
+      # Step 8: Prepare files for deployment
       - name: Prepare files for deployment
         run: |
           mkdir -p ./publish
           rsync -av --progress . ./publish --exclude publish --exclude private_key.pem
 
-      # Step 8: Create target directory on the remote server (GCP VM)
+      # Step 9: Create target directory on the remote server (GCP VM)
       - name: Create target directory on server
         uses: appleboy/ssh-action@v0.1.7
         with:
@@ -77,7 +77,7 @@ jobs:
             mkdir -p /home/${{ secrets.GCP_USER }}/php-app/
             chmod 755 /home/${{ secrets.GCP_USER }}/php-app/
 
-      # Step 9: Deploy application to GCP VM
+      # Step 10: Deploy application to GCP VM
       - name: Deploy to GCP VM
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -86,9 +86,8 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "./publish/*"
           target: "/home/${{ secrets.GCP_USER }}/php-app/"
-          debug: true
 
-      # Step 10: Start PHP Server
+      # Step 11: Start PHP Server
       - name: Start PHP Server
         uses: appleboy/ssh-action@v0.1.7
         with:
@@ -97,4 +96,5 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /home/${{ secrets.GCP_USER }}/php-app/publish
-            nohup php -S 0.0.0.0:8004 > php_server.log 2>&1 
+            nohup php -S 0.0.0.0:8004 > php_server.log 2>&1
+
