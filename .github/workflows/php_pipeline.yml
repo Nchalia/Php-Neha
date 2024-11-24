@@ -21,23 +21,21 @@ jobs:
         with:
           fetch-depth: 0  # Fetch full history for better Sonar relevance
 
-      # Step 2: Run SonarQube Scan
+      # Fail the job if SonarQube finds issues
       - name: SonarQube Cloud Scan
-        id: sonar  # Add ID to fetch output status
+        id: sonar
         uses: SonarSource/sonarcloud-github-action@master
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed for PR decoration
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        continue-on-error: true  # Allow the step to continue even if Sonar fails
 
-      # Check SonarQube analysis result
-      - name: Check SonarQube Quality Gate
-        if: always()
+      - name: Fail Workflow on SonarQube Quality Gate Failure
+        if: ${{ steps.sonar.outputs.sonar-quality-gate-status != 'PASSED' }}
         run: |
-          if [ "${{ steps.sonar.outputs.sonar-quality-gate-status }}" != "PASSED" ]; then
-            echo "SonarQube Quality Gate failed."
-            exit 1
-          fi
-
+          echo "SonarQube Quality Gate failed. Exiting with failure."
+          exit 1
+          
       # Step 3: Set up PHP
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
