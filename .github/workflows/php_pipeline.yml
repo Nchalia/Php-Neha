@@ -73,8 +73,8 @@ jobs:
           username: ${{ secrets.GCP_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            mkdir -p /home/${{ secrets.GCP_USER }}/php-app1/
-            chmod 755 /home/${{ secrets.GCP_USER }}/php-app1/
+            mkdir -p /home/${{ secrets.GCP_USER }}/php-app/
+            chmod 755 /home/${{ secrets.GCP_USER }}/php-app/
 
       # Deploy application to GCP VM
       - name: Deploy to GCP VM
@@ -84,7 +84,7 @@ jobs:
           username: ${{ secrets.GCP_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "./publish/*"
-          target: "/home/${{ secrets.GCP_USER }}/php-app1/"
+          target: "/home/${{ secrets.GCP_USER }}/php-app/"
           debug: true
 
       # Step 11: Run PHP built-in server
@@ -95,7 +95,7 @@ jobs:
           username: ${{ secrets.GCP_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /home/${{ secrets.GCP_USER }}/php-app1/publish
+            cd /home/${{ secrets.GCP_USER }}/php-app/publish
             nohup php -S 0.0.0.0:8004 > php_server.log 2>&1 &
 
       # Step 12: Set GitHub PR status based on SonarQube result
