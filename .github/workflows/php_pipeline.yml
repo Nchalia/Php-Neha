@@ -1,4 +1,4 @@
-name: Pull Request Validation Pipeline
+name: Build and Deploy PHP Application
 
 on:
   push:
@@ -10,8 +10,8 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  sonar-analysis:
-    name: SonarQube Analysis
+  build:
+    name: Build and Deploy
     runs-on: ubuntu-latest
 
     steps:
@@ -19,78 +19,102 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Fetch full history for Sonar relevance
+          fetch-depth: 0  # Shallow clones should be disabled for better relevancy of analysis
 
-      # Step 2: Set up PHP
+      # Step 2: Run SonarQube Scan
+      - name: SonarQube Cloud Scan
+        id: sonar_scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      # Step 3: Set up PHP
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '7.4'
 
-      # Step 3: Install dependencies for SonarQube (if any)
-      - name: Install Dependencies
+      # Step 4: Run PHP Lint
+      - name: Run PHP Lint
+        run: |
+          php -l index.php
+
+      # Step 5: Run PHP Unit Tests (if any)
+      - name: Run Tests
+        run: |
+          if [ -d tests ]; then
+            ./vendor/bin/phpunit --configuration phpunit.xml
+          else
+            echo "No tests found, skipping."
+          fi
+
+      # Step to create SSH key file
+      - name: Create SSH Key File
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key.pem
+          chmod 600 private_key.pem
+
+      # Install dependencies if needed
+      - name: Install Composer Dependencies
         run: composer install --no-dev --optimize-autoloader
 
-      # Step 4: Run SonarQube Analysis
-      - name: SonarQube Cloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      # Prepare files for deployment
+      - name: Prepare files for deployment
+        run: |
+          mkdir -p ./publish
+          rsync -av --progress . ./publish --exclude publish --exclude private_key.pem
 
-    # Fail the job if SonarQube finds issues
-    outputs:
-      sonar-status: ${{ steps.sonar.outputs.sonar-status }}
-    continue-on-error: false  # Fail the workflow if the analysis fails
+      # Step to create target directory on the remote server (GCP VM)
+      - name: Create target directory on server
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.GCP_VM_IP }}
+          username: ${{ secrets.GCP_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            mkdir -p /home/${{ secrets.GCP_USER }}/php-app/
+            chmod 755 /home/${{ secrets.GCP_USER }}/php-app/
 
-      # # Step 6: Run PHP Unit Tests (if any)
-      # - name: Run Tests
-      #   run: |
-      #     if [ -d tests ]; then
-      #       ./vendor/bin/phpunit --configuration phpunit.xml
-      #     else
-      #       echo "No tests found, skipping."
-      #     fi
+      # Deploy application to GCP VM
+      - name: Deploy to GCP VM
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.GCP_VM_IP }}
+          username: ${{ secrets.GCP_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "./publish/*"
+          target: "/home/${{ secrets.GCP_USER }}/php-app/"
+          debug: true
 
-      # # Step 7: Install Composer Dependencies
-      # - name: Install Composer Dependencies
-      #   run: composer install --no-dev --optimize-autoloader
+      # Step 11: Run PHP built-in server
+      - name: Start PHP Server
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.GCP_VM_IP }}
+          username: ${{ secrets.GCP_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /home/${{ secrets.GCP_USER }}/php-app/publish
+            nohup php -S 0.0.0.0:8004 > php_server.log 2>&1 &
 
-      # # Step 8: Prepare files for deployment
-      # - name: Prepare files for deployment
-      #   run: |
-      #     mkdir -p ./publish
-      #     rsync -av --progress . ./publish --exclude publish --exclude private_key.pem
+      # Step 12: Set GitHub PR status based on SonarQube result
+      - name: Set PR Status Check
+        if: success() # Runs only if previous steps are successful
+        run: |
+          if [[ "${{ steps.sonar_scan.outputs.result }}" == "OK" ]]; then
+            echo "SonarQube scan passed, setting GitHub status to 'SonarQube Analysis - Pass'"
+            curl -X POST \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -d '{"state": "success", "context": "SonarQube Analysis - Pass", "description": "SonarQube scan passed."}' \
+              "https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.sha }}"
+          else
+            echo "SonarQube scan failed, setting GitHub status to 'SonarQube Analysis - Failed'"
+            curl -X POST \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -d '{"state": "failure", "context": "SonarQube Analysis - Failed", "description": "SonarQube scan failed."}' \
+              "https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.sha }}"
+            exit 1
+        continue-on-error: true  # Ensure the workflow does not fail entirely if this step fails
 
-      # # Step 9: Create target directory on the remote server (GCP VM)
-      # - name: Create target directory on server
-      #   uses: appleboy/ssh-action@v0.1.7
-      #   with:
-      #     host: ${{ secrets.GCP_VM_IP }}
-      #     username: ${{ secrets.GCP_USER }}
-      #     key: ${{ secrets.SSH_PRIVATE_KEY }}
-      #     script: |
-      #       mkdir -p /home/${{ secrets.GCP_USER }}/php-app/
-      #       chmod 755 /home/${{ secrets.GCP_USER }}/php-app/
-
-      # # Step 10: Deploy application to GCP VM
-      # - name: Deploy to GCP VM
-      #   uses: appleboy/scp-action@v0.1.7
-      #   with:
-      #     host: ${{ secrets.GCP_VM_IP }}
-      #     username: ${{ secrets.GCP_USER }}
-      #     key: ${{ secrets.SSH_PRIVATE_KEY }}
-      #     source: "./publish/*"
-      #     target: "/home/${{ secrets.GCP_USER }}/php-app/"
-
-      # # Step 11: Start PHP Server
-      # - name: Start PHP Server
-      #   uses: appleboy/ssh-action@v0.1.7
-      #   with:
-      #     host: ${{ secrets.GCP_VM_IP }}
-      #     username: ${{ secrets.GCP_USER }}
-      #     key: ${{ secrets.SSH_PRIVATE_KEY }}
-      #     script: |
-      #       cd /home/${{ secrets.GCP_USER }}/php-app/publish
-      #       nohup php -S 0.0.0.0:8004 > php_server.log 2>&1
 
