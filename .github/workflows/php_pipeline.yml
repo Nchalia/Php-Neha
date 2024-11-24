@@ -3,10 +3,10 @@ name: PHP Build and Deploy Pipeline
 on:
   push:
     branches:
-      - security-pipeline
+      - pr-pipelinenew
   pull_request:
     branches:
-      - security-pipeline
+      - pr-pipelinenew
     types: [opened, synchronize, reopened]
 
 jobs:
