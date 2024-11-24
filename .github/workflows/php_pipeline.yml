@@ -3,10 +3,10 @@ name: Pull Request Validation Pipeline
 on:
   push:
     branches:
-      - pr-pipeline
+      - pr-pipelinenew
   pull_request:
     branches:
-      - pr-pipeline
+      - pr-pipelinenew
     types: [opened, synchronize, reopened]
 
 jobs:
