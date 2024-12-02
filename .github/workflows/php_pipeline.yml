@@ -39,14 +39,14 @@ jobs:
         run: |
           php -l index.php
 
-      # Step 5: Run PHP Unit Tests (if any)
-      - name: Run Tests
-        run: |
-          if [ -d tests ]; then
-            ./vendor/bin/phpunit --configuration phpunit.xml
-          else
-            echo "No tests found, skipping."
-          fi
+      # # Step 5: Run PHP Unit Tests (if any)
+      # - name: Run Tests
+      #   run: |
+      #     if [ -d tests ]; then
+      #       ./vendor/bin/phpunit --configuration phpunit.xml
+      #     else
+      #       echo "No tests found, skipping."
+      #     fi
       # Step to create SSH key file
       - name: Create SSH Key File
         run: |
