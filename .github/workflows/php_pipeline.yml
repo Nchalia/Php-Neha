@@ -65,7 +65,7 @@ jobs:
  
       # Step to create target directory on the remote server (GCP VM)
       - name: Create target directory on server
-        uses: appleboy/ssh-action@v0.1.7
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.GCP_VM_IP }}
           username: ${{ secrets.GCP_USER }}
