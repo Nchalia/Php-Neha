@@ -1,4 +1,4 @@
-name: PR SonarQube and Auto-Merge
+name: PR SonarQube Analysis with Auto-Merge
 
 on:
   pull_request:
@@ -6,49 +6,68 @@ on:
       - security-pipeline
     types: [opened, synchronize, reopened]
 
+permissions:
+  pull-requests: write
+  contents: write
+
 jobs:
-  sonar_scan:
-    name: Run SonarQube and Auto-Merge
+  sonar_analysis:
+    name: SonarQube Analysis and Auto-Merge
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout code
+      # Step 1: Checkout the code
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Fetch the entire history for SonarQube analysis
+          fetch-depth: 0
 
-      # Step 2: Run SonarQube Scan
-      - name: SonarQube Scan
-        id: sonar_scan
-        uses: SonarSource/sonarcloud-github-action@master
+      # Step 2: Set up PHP
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'  # Match your PHP version
+
+      # Step 3: Install dependencies (Composer)
+      - name: Install Composer Dependencies
+        run: composer install --no-dev --optimize-autoloader
+
+      # Step 4: Run SonarQube Analysis
+      - name: Start SonarQube Analysis
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed for PR context
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          sonar-scanner \
+            -Dsonar.projectKey="nchalia_php-application" \
+            -Dsonar.organization="nchalia" \
+            -Dsonar.sources=. \
+            -Dsonar.host.url="https://sonarcloud.io" \
+            -Dsonar.login="${{ secrets.SONAR_TOKEN }}" \
+            -Dsonar.pullrequest.key=${{ github.event.pull_request.number }} \
+            -Dsonar.pullrequest.base=${{ github.base_ref }} \
+            -Dsonar.pullrequest.branch=${{ github.head_ref }}
 
-      # Step 3: Check SonarQube Quality Gate
+      # Step 5: Check SonarQube Quality Gate Status
       - name: Check SonarQube Quality Gate
         id: quality_gate
         run: |
-          # Fetch the SonarQube quality gate status
-          status=$(curl -s -u ${{ secrets.SONAR_TOKEN }} \
-            "https://sonarcloud.io/api/qualitygates/project_status?projectKey=${{ github.repository }}" | jq -r '.projectStatus.status')
+          status=$(curl -s -u ${{ secrets.SONAR_TOKEN }}: \
+            "https://sonarcloud.io/api/qualitygates/project_status?projectKey=nchalia_php-application&pullRequest=${{ github.event.pull_request.number }}" \
+            | jq -r '.projectStatus.status')
 
           echo "SonarQube Quality Gate Status: $status"
           echo "::set-output name=status::$status"
 
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
-      # Step 4: Conditionally Merge PR if SonarQube Passed
-      - name: Merge Pull Request
+      # Step 6: Auto-Merge the PR if Quality Gate Passes
+      - name: Enable auto-merge for the pull request
         if: steps.quality_gate.outputs.status == 'OK'
-        run: |
-          gh pr merge ${{ github.event.pull_request.number }} --merge --admin
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: peter-evans/enable-pull-request-automerge@v3
+        with:
+          pull-request-number: ${{ github.event.pull_request.number }}
+          merge-method: squash
 
-      # Step 5: Fail the workflow if SonarQube fails
+      # Step 7: Fail the Workflow if Quality Gate Fails
       - name: Fail Workflow
         if: steps.quality_gate.outputs.status != 'OK'
         run: |
