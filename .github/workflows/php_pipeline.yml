@@ -64,15 +64,25 @@ jobs:
           rsync -av --progress . ./publish --exclude publish --exclude private_key.pem
  
       # Step to create target directory on the remote server (GCP VM)
+      # - name: Create target directory on server
+      #   uses: appleboy/scp-action@v0.1.7
+      #   with:
+      #     host: ${{ secrets.GCP_VM_IP }}
+      #     username: ${{ secrets.GCP_USER }}
+      #     key: ${{ secrets.SSH_PRIVATE_KEY }}
+      #     script: |
+      #       mkdir -p /home/${{ secrets.GCP_USER }}/php-app/
+      #       chmod 755 /home/${{ secrets.GCP_USER }}/php-app/
+
       - name: Create target directory on server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.GCP_VM_IP }}
           username: ${{ secrets.GCP_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            mkdir -p /home/${{ secrets.GCP_USER }}/php-app/
-            chmod 755 /home/${{ secrets.GCP_USER }}/php-app/
+          source: "./publish/"
+          target: "/home/${{ secrets.GCP_USER }}/php-app/"
+          debug: true
  
       # Deploy application to GCP VM
       - name: Deploy to GCP VM
