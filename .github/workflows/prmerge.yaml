@@ -3,7 +3,7 @@ name: PR SonarQube and Auto-Merge
 on:
   pull_request:
     branches:
-      - main
+      - security-pipeline
     types: [opened, synchronize, reopened]
 
 jobs:
